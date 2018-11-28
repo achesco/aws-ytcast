@@ -9,8 +9,22 @@
  * SSH_KEY - ssh key with newlines replaced with '\n'
  */
 
+const url = require('url');
 const SSH = require('simple-ssh');
-const linkRe = /(youtube\.com\/watch\?v=|youtu\.be\/)[a-zA-Z0-9\-_]+$/;
+
+function getUrl(link) {
+	const { host, query, pathname } = url.parse(link, true);
+	let id;
+	if (host.endsWith('youtube.com') && pathname === '/watch') {
+		id = query.v;
+	} else if (host.endsWith('youtu.be')) {
+		id = pathname.split('/')[1];
+	}
+	if (!id) {
+		return false;
+	}
+	return `https://www.youtube.com/watch?v=${id}`;
+}
 
 exports.handler = async (update) => {
 	try {
@@ -21,7 +35,8 @@ exports.handler = async (update) => {
 			throw 'ERROR: Username is not achesco!';
 		}
 
-		if (!linkRe.test(link)) {
+		const url = getUrl(link);
+		if (!url) {
 			throw 'ERROR: Message with link validation failed!';
 		}
 
@@ -33,7 +48,7 @@ exports.handler = async (update) => {
 
 		const stdout = await new Promise((resolve, reject) => {
 			ssh.exec('~/scripts/download-call.sh', {
-				args: [`"${link}"`],
+				args: [`"${url}"`],
 				out: resolve,
 				err: reject,
 			}).start();
