@@ -8,6 +8,7 @@
  * S3_BUCKET_URL - s3 bucket base url, should be accessible by consumers
  * FEED_URL - url of playlist itself, should be accessible by consumers
  * FEED_TITLE - title string
+ * FEED_COVER_URL - url for cover image
  */
 
 const AWS = require('aws-sdk');
@@ -15,7 +16,7 @@ const S3 = new AWS.S3({apiVersion: '2006-03-01'});
 
 exports.handler = async (event) => {
 	try {
-		const { S3_BUCKET, S3_BUCKET_URL, FEED_URL, FEED_TITLE } = process.env;
+		const { S3_BUCKET, S3_BUCKET_URL, FEED_URL, FEED_TITLE, FEED_COVER_URL } = process.env;
 		const BucketUrl = S3_BUCKET_URL.replace(/\/$/, '') + '/';
 		const list = await S3.listObjects({ Bucket: S3_BUCKET }).promise();
 
@@ -23,6 +24,7 @@ exports.handler = async (event) => {
 			version: 'https://jsonfeed.org/version/1',
 			title: FEED_TITLE,
 			feed_url: FEED_URL,
+			cover_url: FEED_COVER_URL,
 		};
 	
 		feed.items = list.Contents
@@ -73,6 +75,7 @@ function toXml(feed) {
 	xml += `<title>${feed.title}</title>`
 	xml += `<link>${feed.feed_url}</link>`;
 	xml += `<description>${feed.title}</description>`;
+	xml += `<itunes:image href="${feed.cover_url}"/>`;
 	for (const item of feed.items) {
 		xml += '<item>';
 		xml += `<title>${item.content_text}</title>`;
